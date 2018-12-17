@@ -2,6 +2,7 @@ package com.ivosm.vvv.audiorecord;
 
 import android.os.Environment;
 import android.text.TextUtils;
+import android.util.Log;
 
 import org.w3c.dom.ls.LSException;
 
@@ -30,18 +31,21 @@ public class FileUtils {
     //获取pcm格式文件路径
     public static String getAudioPcmAbsolutepath(String fileName) {
         if (TextUtils.isEmpty(fileName)) {
+            Log.d("AudioReocrdTag",fileName);
             throw  new NullPointerException("filename is Empty");
-
         }
         if (!isSdcardExit()) {
+            Log.d("AudioReocrdTag","isSdcardExit==false");
             throw  new IllegalStateException("sd card not found");
         }
         String mAudioRawPath = "";
         if (isSdcardExit()) {
+            Log.d("AudioReocrdTag","isSdcardExit="+fileName);
             if (!fileName.endsWith(".pcm")) {
                 fileName = fileName + ".pcm";
             }
             String fileBasePath = Environment.getExternalStorageDirectory().getAbsolutePath() +  AUDIO_PCM_BASEPATH;
+            Log.d("AudioReocrdTag","fileBasePath="+fileBasePath);
             File file = new File(fileBasePath);
             if (!file.exists()) {
                 file.mkdirs();
@@ -77,10 +81,12 @@ public class FileUtils {
     }
 
     private static boolean isSdcardExit() {
-        if (Environment.getExternalStorageDirectory().equals(Environment.MEDIA_MOUNTED)) {
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            Log.d("AudioReocrdTag","isSdcardExit==true");
         return true;
         }
         else
+            Log.d("AudioReocrdTag","isSdcardExit==elsefalse");
             return false;
         }
 
