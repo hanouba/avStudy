@@ -5,6 +5,7 @@ import android.media.AudioRecord;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -91,6 +92,82 @@ public class AudioRecorder {
         }).start();
     }
 
+    /**
+     * 暂停录音
+     */
+    public void pauseRecord() {
+        Log.d("AudioRecorder","===pauseRecord===");
+        if (status != Status.STATUS_START) {
+            throw new IllegalStateException("没有在录音");
+        } else {
+            audioRecord.stop();
+            status = Status.STATUS_PAUSE;
+        }
+    }
+
+    /**
+     * 停止录音
+     */
+    public void stopRecord() {
+        Log.d("AudioRecorder","===stopRecord===");
+        if (status == Status.STATUS_NO_READY || status == Status.STATUS_READY) {
+            throw new IllegalStateException("录音尚未开始");
+        } else {
+            audioRecord.stop();
+            status = Status.STATUS_STOP;
+            release();
+        }
+    }
+
+    /**
+     * 释放资源
+     */
+    public void release() {
+        Log.d("AudioRecorder","===release===");
+        //假如有暂停录音
+        try {
+            if (filesNmae.size() > 0) {
+                List<String> filePaths = new ArrayList<>();
+                for (String fileName : filesNmae) {
+                    filePaths.add(FileUtils.getAudioPcmAbsolutepath(fileName));
+                }
+                //清除
+                filesNmae.clear();
+                //将多个pcm文件转化为wav文件
+                mergerPCMFilesToMAVFiles(filePaths);
+
+            } else {
+                //这里由于只要录音过filesName.size都会大于0,没录音时fileName为null
+                //会报空指针 NullPointerException
+                // 将单个pcm文件转化为wav文件
+                //Log.d("AudioRecorder", "=====makePCMFileToWAVFile======");
+                //makePCMFileToWAVFile();
+            }
+        } catch (IllegalStateException e) {
+            throw new IllegalStateException(e.getMessage());
+        }
+
+        if (audioRecord != null) {
+            audioRecord.release();
+            audioRecord = null;
+        }
+
+        status = Status.STATUS_NO_READY;
+    }
+    /**
+     * 取消录音
+     */
+    public void canel() {
+        filesNmae.clear();
+        fileName = null;
+        if (audioRecord != null) {
+            audioRecord.release();
+            audioRecord = null;
+        }
+
+        status = Status.STATUS_NO_READY;
+    }
+
     private void writeDataToFile(RecordStreamListener listener) {
         //new 一个byte 数组来存着一些字节数据 大小为缓冲区大小
         byte[] audiodata = new byte[bufferSizeBytes];
@@ -111,7 +188,6 @@ public class AudioRecorder {
 
             fos = new FileOutputStream(file);
         } catch (IllegalStateException e) {
-            e.getMessage();
             throw new IllegalStateException(e.getMessage());
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -148,13 +224,56 @@ public class AudioRecorder {
      * 将pcm 文件合并成 wav
      * @param filesPaths  pcm 文件路径
      */
-    private void mergerPCMFilesToMAVFiles(List<String> filesPaths) {
+    private void mergerPCMFilesToMAVFiles(final List<String> filesPaths) {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                if ()
+                if (PcmToWav.mergerPCMFilesToMAVFile(filesPaths, FileUtils.getWavFileAbsolutePath(fileName))) {
+                    //操作成功
+                } else {
+                    //操作失败
+                    Log.e("AudioRecorder", "mergePCMFilesToWAVFile fail");
+                    throw new IllegalStateException("mergePCMFilesToWAVFile fail");
+                }
+                fileName = null;
             }
         }).start();
+    }
+    /**
+     * 将单个pcm文件转化为wav文件
+     */
+    private void makePCMFileToWAVFile() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if (PcmToWav.makePCMFileToWAVFile(FileUtils.getAudioPcmAbsolutepath(fileName), FileUtils.getWavFileAbsolutePath(fileName), true)) {
+                    //操作成功
+                } else {
+                    //操作失败
+                    Log.e("AudioRecorder", "makePCMFileToWAVFile fail");
+                    throw new IllegalStateException("makePCMFileToWAVFile fail");
+                }
+                fileName = null;
+            }
+        }).start();
+    }
+
+    /**
+     * 获取录音对象的状态
+     *
+     * @return
+     */
+    public Status getStatus() {
+        return status;
+    }
+
+    /**
+     * 获取本次录音文件的个数
+     *
+     * @return
+     */
+    public int getPcmFilesCount() {
+        return filesNmae.size();
     }
 
     /**

@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
+import com.ivosm.vvv.audiorecord.AudioActivity;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private Button bt1,bt2,bt3,bt4;
     @Override
@@ -29,7 +31,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 startActivity(intent);
                 break;
             case R.id.bt_2:
-                 intent = new Intent(this,PaintViewActivity.class);
+                 intent = new Intent(this,AudioActivity.class);
                 startActivity(intent);
                 break;
         }
